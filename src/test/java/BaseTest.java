@@ -12,8 +12,7 @@ public class BaseTest {
         RestAssured.requestSpecification = new RequestSpecBuilder()
                 .addFilter(new RequestLoggingFilter())
                 .addFilter(new ResponseLoggingFilter())
-                .setBaseUri("https://unsplash.com")
-                .setBasePath("/photos/")
+                .setBaseUri("https://petstore.swagger.io/v2/")
                 .setAccept(ContentType.JSON)
                 .setContentType(ContentType.JSON)
                 .build();
