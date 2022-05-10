@@ -16,7 +16,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public  class PetModel {
 
-    public String id;
+    public Long id;
     public Category category;
     public String name;
     public List<String> photoUrls;

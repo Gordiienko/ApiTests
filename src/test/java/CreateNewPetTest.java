@@ -1,7 +1,8 @@
-import core.models.pet.DeletePetModel;
 import core.models.ErrorModel;
+import core.models.pet.DeletePetModel;
 import core.models.pet.PetModel;
 import core.models.pet.UpdatePetModel;
+import core.utils.Pet;
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
 import org.assertj.core.api.SoftAssertions;
@@ -10,14 +11,14 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static core.Endpoints.PET;
-import static core.Endpoints.PET_BY_ID;
+import static core.Endpoints.*;
 
 public class CreateNewPetTest extends BaseTest {
     SoftAssertions softAssertions = new SoftAssertions();
-    static String petId;
+    static Long petId;
 
-    @Test
+
+    @Test(priority = 1)
     public void checkPetsDateRequest() {
         List<PetModel.Tag> listTags = new ArrayList<>();
         listTags.add(new PetModel.Tag(31, "Small dog"));
@@ -69,13 +70,13 @@ public class CreateNewPetTest extends BaseTest {
     }
 
     @Test(dependsOnMethods = "checkPetsDateRequest")
-    public void updatePetDate (){
+    public void updatePetDate() {
         ValidatableResponse petResponse = RestAssured
                 .given()
                 .contentType("application/x-www-form-urlencoded")
-                .pathParam("id",petId)
-                .formParam("name","Sky")
-                .formParam("status","sold")
+                .pathParam("id", petId)
+                .formParam("name", "Sky")
+                .formParam("status", "sold")
                 .when()
                 .post(PET_BY_ID)
                 .then()
@@ -87,7 +88,7 @@ public class CreateNewPetTest extends BaseTest {
                 .isEqualTo(petId);
         PetModel pet = RestAssured
                 .given()
-                .pathParam("id",petId)
+                .pathParam("id", petId)
                 .when()
                 .get(PET_BY_ID)
                 .then()
@@ -102,11 +103,11 @@ public class CreateNewPetTest extends BaseTest {
     }
 
     @Test(dependsOnMethods = "checkPetsDateRequest")
-    public void deletePetTest(){
+    public void deletePetTest() {
 
         ValidatableResponse petResponse = RestAssured
                 .given()
-                .pathParam("id",petId)
+                .pathParam("id", petId)
                 .when()
                 .delete(PET_BY_ID)
                 .then()
@@ -115,24 +116,60 @@ public class CreateNewPetTest extends BaseTest {
         DeletePetModel deleteResponse = petResponse.extract().as(DeletePetModel.class);
 
         softAssertions.assertThat(deleteResponse.getMessage()).as("das")
-                .isEqualTo(petId);
+                .isEqualTo(petId.toString());
 
         ValidatableResponse newPetResponse = RestAssured
                 .given()
-                .pathParam("id",petId)
+                .pathParam("id", petId)
                 .when()
                 .get(PET_BY_ID)
                 .then()
                 .statusCode(404);
-        ErrorModel actualPetModel = newPetResponse.extract().as(ErrorModel.class);
+        ErrorModel deletePetModel = newPetResponse.extract().as(ErrorModel.class);
 
-        softAssertions.assertThat(actualPetModel.getCode()).as("asd")
+        softAssertions.assertThat(deletePetModel.getCode()).as("asd")
                 .isEqualTo(1);
-        softAssertions.assertThat(actualPetModel.getType()).as("dasd")
+        softAssertions.assertThat(deletePetModel.getType()).as("dasd")
                 .isEqualTo("error");
-        softAssertions.assertThat(actualPetModel.getMessage()).as("das")
+        softAssertions.assertThat(deletePetModel.getMessage()).as("das")
                 .isEqualTo("Pet not found");
         softAssertions.assertAll();
+    }
+
+    @Test(priority = 2)
+    public void createPetWithRandomDate() {
+
+        List<PetModel.Tag> newListTags = new ArrayList<>();
+        newListTags.add(new PetModel.Tag(Pet.getPetId(), Pet.getPetName()));
+        List<String> newListUrl = new ArrayList<>();
+        newListUrl.add(Pet.getPetPhotoUrl());
+        PetModel newPet = PetModel.builder()
+                .name(Pet.getPetName())
+                .category(new PetModel.Category(Pet.getPetId(), Pet.getPetName()))
+                .tags(newListTags)
+                .photoUrls(newListUrl)
+                .status("sold")
+                .build();
+        PetModel petResponse = RestAssured
+                .given()
+                .body(newPet)
+                .when()
+                .post(PET)
+                .then()
+                .statusCode(200)
+                .extract().as(PetModel.class);
+
+        PetModel actualPetResponse = RestAssured
+                .given()
+                .basePath("/pet/findByStatus")
+                .queryParam("status", "sold")
+                .when()
+                .get()
+                .then()
+                .statusCode(200).extract().as(PetModel.class);
+
+        /*Assertions.assertThat(petResponse).as("dsa").isEqualTo(actualPetResponse);*/
+
     }
 
 }
